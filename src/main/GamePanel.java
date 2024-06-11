@@ -36,7 +36,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     private final Audio paddleHitSound;
     private final JButton difficultyButton;
     private final Difficulty difficulty;
-    private final GameRenderer renderer; // graphics.GameRenderer instance to handle rendering
+    private final GameRenderer renderer; // GameRenderer instance to handle rendering
 
     public GamePanel(int WIDTH, int HEIGHT) {
         this.WIDTH = WIDTH;
@@ -83,19 +83,22 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         flashThread.start();
     }
 
+    // Method to increase the difficulty level
     private void increaseDifficulty() {
         difficulty.increaseDifficulty(); // Increase difficulty level
-        adjustBallSpeed();// Adjust ball speed based on difficulty
-        adjustPaddleSpeed();// Adjust paddle speed based on difficulty
+        adjustBallSpeed(); // Adjust ball speed based on difficulty
+        adjustPaddleSpeed(); // Adjust paddle speed based on difficulty
         difficultyButton.setText("Difficulty: " + difficulty.getDifficultyLabel());
-        requestFocusInWindow(); // Request focus for the game panelrequestFocusInWindow(); // Request focus for the game panel
+        requestFocusInWindow(); // Request focus for the game panel
     }
 
+    // Method to adjust ball speed based on difficulty
     private void adjustBallSpeed() {
         ball.setSpeedX(ball.getSpeedX() + difficulty.getBallSpeedIncrement());
         ball.setSpeedY(ball.getSpeedY() + difficulty.getBallSpeedIncrement());
     }
 
+    // Method to adjust paddle speed based on difficulty
     private void adjustPaddleSpeed() {
         // Adjust paddle speeds based on difficulty level
         float newSpeed = playerPaddle.getBaseSpeed() + difficulty.getPaddleSpeedIncrement();
@@ -128,6 +131,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         }
     }
 
+    // Method to update game state
     private void update() {
         playerPaddle.move();
         aiPaddle.moveTowards(ball);
@@ -152,6 +156,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         }
     }
 
+    // Method to reset the ball position
     private void resetBall() {
         ball.setX(WIDTH / 2 - 10);
         ball.setY(HEIGHT / 2 - 10);

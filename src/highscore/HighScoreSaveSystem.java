@@ -3,16 +3,19 @@ package highscore;
 import java.io.*;
 
 public class HighScoreSaveSystem {
+    // Path to the highscore file
     private static final String HIGHSCORE_FILE_PATH = "src/highscore/highscore.txt";
 
+    // Method to save the highscore to the file
     public static void saveHighscore(int highscore) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(HIGHSCORE_FILE_PATH, true))) {
-            writer.println(highscore);
+            writer.println(highscore); // Write the highscore to the file
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    // Method to load the highscore from the file
     public static int loadHighscore() {
         File file = new File(HIGHSCORE_FILE_PATH);
         if (!file.exists()) {
@@ -28,7 +31,7 @@ public class HighScoreSaveSystem {
                     maxScore = score;
                 }
             }
-            return maxScore;
+            return maxScore; // Return the highest score found in the file
         } catch (IOException | NumberFormatException e) {
             // Handle file not found or invalid data
             e.printStackTrace();
@@ -36,6 +39,7 @@ public class HighScoreSaveSystem {
         }
     }
 
+    // Method to create the highscore file if it doesn't exist
     private static void createHighscoreFile() {
         try {
             File file = new File(HIGHSCORE_FILE_PATH);

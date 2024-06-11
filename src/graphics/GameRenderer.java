@@ -50,7 +50,7 @@ public class GameRenderer {
         // Draw player paddle
         playerPaddle.draw(g);
 
-        // Draw logic.AI.AI paddle
+        // Draw AI paddle
         aiPaddle.draw(g);
 
         // Draw ball

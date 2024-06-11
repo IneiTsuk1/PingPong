@@ -4,20 +4,22 @@ import logic.player.Paddle;
 import main.GamePanel;
 
 public class AI {
+    // Properties
+    private Paddle paddle; // The AI's paddle
+    private Ball ball; // The ball object
 
-    private Paddle paddle;
-    private Ball ball;
-
+    // Constructor
     public AI(Paddle paddle, Ball ball) {
         this.paddle = paddle;
         this.ball = ball;
     }
 
+    // Method to update the AI's paddle position
     public void update(Ball ball) {
-        // Calculate the predicted Y-coordinate of the ball when it reaches the logic.AI.AI paddle's X-coordinate
+        // Calculate the predicted Y-coordinate of the ball when it reaches the AI paddle's X-coordinate
         double predictedY = predictBallPosition();
 
-        // Adjust the logic.AI.AI paddle's position based on the predicted Y-coordinate of the ball
+        // Adjust the AI paddle's position based on the predicted Y-coordinate of the ball
         if (predictedY < paddle.getY() + paddle.getHeight() / 2) {
             paddle.moveUp(); // Move the paddle up
         } else {
@@ -32,6 +34,7 @@ public class AI {
         }
     }
 
+    // Method to predict the Y-coordinate of the ball when it reaches the AI paddle's X-coordinate
     private double predictBallPosition() {
         double slope = (double)(ball.getY() - ball.getPreviousY()) / (ball.getX() - ball.getPreviousX());
         return slope * (paddle.getX() - ball.getX()) + ball.getY();
