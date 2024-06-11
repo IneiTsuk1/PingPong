@@ -1,6 +1,13 @@
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
+package main;
+
+import Audio.Audio;
+import graphics.GameRenderer;
+import highscore.HighScoreSaveSystem;
+import logic.AI.Ball;
+import logic.game.Difficulty;
+import logic.game.Score;
+import logic.player.Paddle;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -18,17 +25,18 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     private boolean gameStarted;
     private boolean spaceVisible; // Indicates if the "Press SPACE to start" text is visible
 
-    private Paddle playerPaddle;
-    private Paddle aiPaddle;
-    private Ball ball;
+    private final Paddle playerPaddle;
+    private final Paddle aiPaddle;
+    private final Ball ball;
     private HighScoreSaveSystem hs;
 
-    private Score score;
+    private final Score score;
     private int highscore;
-    private Clip paddleHitSound;
 
-    private JButton difficultyButton;
-    private int difficultyLevel;
+    private final Audio paddleHitSound;
+    private final JButton difficultyButton;
+    private final Difficulty difficulty;
+    private final GameRenderer renderer; // graphics.GameRenderer instance to handle rendering
 
     public GamePanel(int WIDTH, int HEIGHT) {
         this.WIDTH = WIDTH;
@@ -39,10 +47,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
         playerPaddle = new Paddle(50, HEIGHT / 2 - 50, 20, 100, 4);
         aiPaddle = new Paddle(WIDTH - 70, HEIGHT / 2 - 50, 20, 100, 4);
-        ball = new Ball(WIDTH / 2 - 10, HEIGHT / 2  - 10, 20, 3, 3);
+        ball = new Ball(WIDTH / 2 - 10, HEIGHT / 2 - 10, 20, 3, 3);
 
         addKeyListener(this);
         playerPaddle.setSpeed(8);
+
+        difficulty = new Difficulty();
 
         // Initialize difficulty button
         difficultyButton = new JButton("Difficulty: Easy");
@@ -55,67 +65,42 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         });
 
         add(difficultyButton);
-        difficultyLevel = 1; // Default difficulty level
 
         score = new Score();
-
         highscore = HighScoreSaveSystem.loadHighscore();
 
         // Initialize game state
         gameRunning = false;
         gameStarted = false;
 
-        // Load the sound for paddle hit
-        try {
-            paddleHitSound = AudioSystem.getClip();
-            AudioInputStream inputStream = AudioSystem.getAudioInputStream(
-                    getClass().getResourceAsStream("paddle_hit.wav"));
-            paddleHitSound.open(inputStream);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        paddleHitSound = new Audio("/Audio/resources/paddle_hit.wav");
+
+        // Initialize the game renderer
+        renderer = new GameRenderer();
+        renderer.initialize();
 
         Thread flashThread = new Thread(new FlashRunnable());
         flashThread.start();
     }
 
     private void increaseDifficulty() {
-        difficultyLevel++; // Increase difficulty level
+        difficulty.increaseDifficulty(); // Increase difficulty level
         adjustBallSpeed();// Adjust ball speed based on difficulty
         adjustPaddleSpeed();// Adjust paddle speed based on difficulty
-        requestFocusInWindow(); // Request focus for the game panelrequestFocusInWindow();// Request focus for the game panel
+        difficultyButton.setText("Difficulty: " + difficulty.getDifficultyLabel());
+        requestFocusInWindow(); // Request focus for the game panelrequestFocusInWindow(); // Request focus for the game panel
     }
 
     private void adjustBallSpeed() {
-        // Adjust ball speed based on difficulty level
-        int newSpeedX = ball.getSpeedX() + difficultyLevel;
-        int newSpeedY = ball.getSpeedY() + difficultyLevel;
-        ball.setSpeedX(newSpeedX);
-        ball.setSpeedY(newSpeedY);
-        // Update button text to reflect current difficulty
-        difficultyButton.setText("Difficulty: " + getDifficultyLabel());
+        ball.setSpeedX(ball.getSpeedX() + difficulty.getBallSpeedIncrement());
+        ball.setSpeedY(ball.getSpeedY() + difficulty.getBallSpeedIncrement());
     }
 
     private void adjustPaddleSpeed() {
         // Adjust paddle speeds based on difficulty level
-        float paddleSpeedIncrement = 0.7f; // Adjust this value as needed
-        float newPaddleSpeed = playerPaddle.getBaseSpeed() + (difficultyLevel * paddleSpeedIncrement);
-        playerPaddle.setSpeed(newPaddleSpeed);
-        aiPaddle.setSpeed(newPaddleSpeed);
-    }
-
-    private String getDifficultyLabel() {
-        switch (difficultyLevel) {
-            case 1:
-                return "Easy";
-            case 2:
-                return "Medium";
-            case 3:
-                return "Hard";
-            // Add more cases as needed
-            default:
-                return "";
-        }
+        float newSpeed = playerPaddle.getBaseSpeed() + difficulty.getPaddleSpeedIncrement();
+        playerPaddle.setSpeed(newSpeed);
+        aiPaddle.setSpeed(newSpeed);
     }
 
     @Override
@@ -144,30 +129,16 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     }
 
     private void update() {
-        // Move the player paddle based on input
-        // (Implement key event handling in the keyPressed and keyReleased methods)
         playerPaddle.move();
+        aiPaddle.moveTowards(ball);
 
-        // Move the AI paddle based on the ball's position
-        int ballCenterY = ball.getY() + ball.getSize() / 2;
-        int aiPaddleCenterY = aiPaddle.getY() + aiPaddle.getHeight() / 2;
-        if (ballCenterY < aiPaddleCenterY) {
-            aiPaddle.moveUp();
-        } else if (ballCenterY > aiPaddleCenterY) {
-            aiPaddle.moveDown();
-        }
-
-        // Move the ball
         ball.move();
-
-        // Check for collisions with paddles
-        ball.checkCollisionWithPaddle(playerPaddle);
-        ball.checkCollisionWithPaddle(aiPaddle);
-
-        // Check for collisions with walls
         ball.checkCollisionWithWall(WIDTH, HEIGHT);
 
-        // Update the score if the ball goes out of bounds
+        if (ball.checkCollisionWithPaddle(playerPaddle) || ball.checkCollisionWithPaddle(aiPaddle)) {
+            paddleHitSound.play();
+        }
+
         if (ball.getX() <= 0) {
             score.incrementAiScore();
             resetBall();
@@ -178,34 +149,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 hs.saveHighscore(highscore);
             }
             resetBall();
-        }
-
-        // Game logic goes here
-        ball.move();
-        ball.checkCollisionWithPaddle(playerPaddle);
-        ball.checkCollisionWithPaddle(aiPaddle);
-        ball.checkCollisionWithWall(WIDTH, HEIGHT);
-
-        // Check for collision with player paddle and play sound
-        if (ball.getX() <= playerPaddle.getX() + playerPaddle.getWidth() &&
-                ball.getY() + ball.getSize() >= playerPaddle.getY() &&
-                ball.getY() <= playerPaddle.getY() + playerPaddle.getHeight()) {
-            playPaddleHitSound();
-        }
-
-        // Check for collision with AI paddle and play sound
-        if (ball.getX() + ball.getSize() >= aiPaddle.getX() &&
-                ball.getY() + ball.getSize() >= aiPaddle.getY() &&
-                ball.getY() <= aiPaddle.getY() + aiPaddle.getHeight()) {
-            playPaddleHitSound();
-        }
-    }
-
-    private void playPaddleHitSound() {
-        if (paddleHitSound != null) {
-            paddleHitSound.stop(); // Stop any previous playback
-            paddleHitSound.setFramePosition(0); // Reset sound to the beginning
-            paddleHitSound.start(); // Play the sound
         }
     }
 
@@ -218,31 +161,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        setBackground(Color.BLACK);
-
-        // Draw game objects if the game is running
-        if (gameRunning) {
-            playerPaddle.draw(g);
-            aiPaddle.draw(g);
-            ball.draw(g);
-
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 24));
-            g.drawString("Player: " + score.getPlayerScore(), 20, 30);
-            g.drawString("AI: " + score.getAiScore(), WIDTH - 100, 30);
-            g.drawString("Highscore: " + highscore, WIDTH / 2 - 70, 30);
-        } else {
-            // Draw start menu if the game is not running
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 36));
-            g.drawString("Ping Pong Game", WIDTH / 2 - 160, HEIGHT / 2 - 50);
-
-            // Draw "Press SPACE to start" text if it's visible
-            if (spaceVisible) {
-                g.setFont(new Font("Arial", Font.PLAIN, 24));
-                g.drawString("Press SPACE to start", WIDTH / 2 - 130, HEIGHT / 2 + 20);
-            }
-        }
+        // Use the renderer to render the game graphics
+        renderer.render(g, this, gameRunning, spaceVisible, playerPaddle, aiPaddle, ball, score, highscore);
     }
 
     @Override

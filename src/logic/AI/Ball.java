@@ -1,3 +1,7 @@
+package logic.AI;
+
+import logic.player.Paddle;
+
 import java.awt.*;
 
 public class Ball {
@@ -27,30 +31,12 @@ public class Ball {
         y += speedY;
     }
 
-    public void checkCollisionWithPaddle(Paddle paddle) {
-        if (x + size >= paddle.getX() && x <= paddle.getX() + paddle.getWidth() &&
-                y + size >= paddle.getY() && y <= paddle.getY() + paddle.getHeight()) {
-            speedX *= -1;
-        }
-    }
-
-    public void checkCollisionWithWall(int screenWidth, int screenHeight) {
-        if (y <= 0 || y + size >= screenHeight) {
-            speedY *= -1;
-        }
-    }
-
     public void setX(int newX) {
         x = newX;
     }
 
     public void setY(int newY) {
         y = newY;
-    }
-
-    public void draw(Graphics g) {
-        g.setColor(Color.WHITE);
-        g.fillOval(x, y, size, size);
     }
 
     public int getX() {
@@ -65,20 +51,20 @@ public class Ball {
         return size;
     }
 
-    public int getSpeedX() {
-        return speedX;
-    }
-
     public void setSpeedX(int speedX) {
         this.speedX = speedX;
     }
 
-    public int getSpeedY() {
-        return speedY;
-    }
-
     public void setSpeedY(int speedY) {
         this.speedY = speedY;
+    }
+
+    public int getSpeedX() {
+        return speedX;
+    }
+
+    public int getSpeedY() {
+        return speedY;
     }
 
     public int getPreviousX() {
@@ -87,5 +73,30 @@ public class Ball {
 
     public int getPreviousY() {
         return previousY;
+    }
+
+    public boolean checkCollisionWithPaddle(Paddle paddle) {
+        if (x < paddle.getX() + paddle.getWidth() && x + size > paddle.getX() &&
+                y < paddle.getY() + paddle.getHeight() && y + size > paddle.getY()) {
+            // Correct position and reverse direction
+            if (previousX + size <= paddle.getX() || previousX >= paddle.getX() + paddle.getWidth()) {
+                speedX *= -1; // Horizontal collision
+            } else if (previousY + size <= paddle.getY() || previousY >= paddle.getY() + paddle.getHeight()) {
+                speedY *= -1; // Vertical collision
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public void checkCollisionWithWall(int screenWidth, int screenHeight) {
+        if (y <= 0 || y + size >= screenHeight) {
+            speedY *= -1;
+        }
+    }
+
+    public void draw(Graphics g) {
+        g.setColor(Color.WHITE);
+        g.fillOval(x, y, size, size);
     }
 }

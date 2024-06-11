@@ -1,3 +1,5 @@
+package logic.game;
+
 public class Score {
     private int playerScore;
     private int aiScore;

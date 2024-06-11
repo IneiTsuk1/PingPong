@@ -1,7 +1,9 @@
+package highscore;
+
 import java.io.*;
 
 public class HighScoreSaveSystem {
-    private static final String HIGHSCORE_FILE_PATH = "highscore.txt";
+    private static final String HIGHSCORE_FILE_PATH = "src/highscore/highscore.txt";
 
     public static void saveHighscore(int highscore) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(HIGHSCORE_FILE_PATH, true))) {
